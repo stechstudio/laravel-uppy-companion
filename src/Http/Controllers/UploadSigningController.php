@@ -2,11 +2,11 @@
 
 namespace STS\LaravelUppyCompanion\Http\Controllers;
 
-use Aws\S3\S3ClientInterface;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use STS\LaravelUppyCompanion\LaravelUppyCompanion;
 
 class UploadSigningController extends Controller
 {
@@ -21,8 +21,8 @@ class UploadSigningController extends Controller
         });
     }
 
-    public function __construct(public S3ClientInterface $client, public string $bucket)
-    {   
+    public function __construct(public LaravelUppyCompanion $companion)
+    {
     }
 
     /**
@@ -33,8 +33,8 @@ class UploadSigningController extends Controller
     public function createMultipartUpload(Request $request)
     {
         $split = explode('.', $request->filename);
-        $result = $this->client->createMultipartUpload([
-            'Bucket' => $this->bucket,
+        $result = $this->companion->getClient()->createMultipartUpload([
+            'Bucket' => $this->companion->getBucket(),
             'Key' => count($split) > 1 ? Str::uuid() . '.' . $split[count($split) - 1] : Str::uuid(),
             'ACL' => 'private',
             'ContentType' => $request->type,
@@ -56,8 +56,8 @@ class UploadSigningController extends Controller
         $next = 0;
 
         do {
-            $result = $this->client->listParts([
-                'Bucket' => $this->bucket,
+            $result = $this->companion->getClient()->listParts([
+                'Bucket' => $this->companion->getBucket(),
                 'Key' => $request->key,
                 'UploadId' => $request->uploadId,
                 'PartNumberMarker' => $next,
@@ -77,8 +77,8 @@ class UploadSigningController extends Controller
      */
     public function signPartUpload(Request $request)
     {
-        $cmd = $this->client->getCommand('uploadPart', [
-            'Bucket' => $this->bucket,
+        $cmd = $this->companion->getClient()->getCommand('uploadPart', [
+            'Bucket' => $this->companion->getBucket(),
             'Key' => $request->key,
             'UploadId' => $request->uploadId,
             'PartNumber' => $request->partNumber,
@@ -86,7 +86,7 @@ class UploadSigningController extends Controller
             'Expires' => '+24 hours',
         ]);
 
-        $signedRequest = $this->client->createPresignedRequest($cmd, '+24 hours');
+        $signedRequest = $this->companion->getClient()->createPresignedRequest($cmd, '+24 hours');
 
         return response()->json(['url' => (string)$signedRequest->getUri()]);
     }
@@ -98,8 +98,8 @@ class UploadSigningController extends Controller
      */
     public function abortMultipartUpload(Request $request)
     {
-        $this->client->abortMultipartUpload([
-            'Bucket' => $this->bucket,
+        $this->companion->getClient()->abortMultipartUpload([
+            'Bucket' => $this->companion->getBucket(),
             'Key' => $request->key,
             'UploadId' => $request->uploadId,
         ]);
@@ -114,8 +114,8 @@ class UploadSigningController extends Controller
      */
     public function completeMultipartUpload(Request $request)
     {
-        $result = $this->client->completeMultipartUpload([
-            'Bucket' => $this->bucket,
+        $result = $this->companion->getClient()->completeMultipartUpload([
+            'Bucket' => $this->companion->getBucket(),
             'Key' => $request->key,
             'UploadId' => $request->uploadId,
             'MultipartUpload' => ['Parts' => $request->parts],
