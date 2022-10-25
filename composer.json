@@ -1,0 +1,29 @@
+{
+    "name": "stechstudio/laravel-uppy-companion",
+    "description": "Reusable set of routes to sign and manage S3 multipart uploads with Uppy.",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "STS\\LaravelUppyCompanion\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "David Palmer",
+            "email": "dp@reproconnect.com"
+        }
+    ],
+    "require": {
+        "aws/aws-sdk-php": "^3.111",
+        "illuminate/http": "^8.0|^9.0",
+        "illuminate/routing": "^8.0|^9.0",
+        "illuminate/support": "^8.0|^9.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "STS\\LaravelUppyCompanion\\LaravelUppyCompanionServiceProvider"
+            ]
+        }
+    }
+}
