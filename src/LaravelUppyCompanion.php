@@ -3,6 +3,7 @@
 namespace STS\LaravelUppyCompanion;
 
 use Aws\S3\S3ClientInterface;
+use Illuminate\Support\Str;
 
 class LaravelUppyCompanion
 {
@@ -12,10 +13,12 @@ class LaravelUppyCompanion
     private \Closure $bucketCallback;
     private string $bucket;
 
+    private ?\Closure $keyCallback;
+
     public function __construct()
     {}
 
-    public function configure(\Closure|string $bucket, \Closure|S3ClientInterface $client)
+    public function configure(\Closure|string $bucket, \Closure|S3ClientInterface $client, ?\Closure $key = null)
     {
         if ($bucket instanceof \Closure) {
             $this->bucketCallback = $bucket;
@@ -28,6 +31,8 @@ class LaravelUppyCompanion
         } else {
             $this->client = $client;
         }
+
+        $this->keyCallback = $key ?? fn ($filename) => static::getUUID($filename);
     }
 
     public function getClient(): S3ClientInterface
@@ -54,5 +59,28 @@ class LaravelUppyCompanion
         }
 
         return $this->bucket;
+    }
+
+    /**
+     * Gets a key for the given filename according to the key callback.
+     *
+     * @param string $filename
+     * @return string
+     */
+    public function getKey(string $filename): string
+    {
+        return call_user_func($this->keyCallback, $filename);
+    }
+
+    /**
+     * Return a UUID or a UUID with the extension of the filename.
+     *
+     * @param string $filename
+     * @return string
+     */
+    public static function getUUID(string $filename): string
+    {
+        $split = explode('.', $filename);
+        return count($split) > 1 ? Str::uuid() . '.' . $split[count($split) - 1] : Str::uuid();
     }
 }
