@@ -17,8 +17,12 @@ class LaravelUppyCompanion
 
     private ?\Closure $keyCallback;
 
-    public function __construct()
-    {}
+    public function __construct(\Closure|string|null $bucket = null, \Closure|S3ClientInterface|null $client = null, ?\Closure $key = null)
+    {
+        if ($bucket && $client) {
+            $this->configure($bucket, $client, $key);
+        }
+    }
 
     public function configure(\Closure|string $bucket, \Closure|S3ClientInterface $client, ?\Closure $key = null)
     {

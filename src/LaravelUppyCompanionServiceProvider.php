@@ -2,13 +2,14 @@
 
 namespace STS\LaravelUppyCompanion;
 
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\ServiceProvider;
 
 class LaravelUppyCompanionServiceProvider extends ServiceProvider
 {
     public function register()
     {
-        $this->app->singleton(LaravelUppyCompanion::class, fn () => new LaravelUppyCompanion());
+        App::singleton(LaravelUppyCompanion::class, fn () => new LaravelUppyCompanion());
     }
 
     public function provides()

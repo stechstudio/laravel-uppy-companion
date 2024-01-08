@@ -23,17 +23,17 @@ Because [FileRocket](https://github.com/stechstudio/FileRocket) requires informa
 
 Simple values known at `boot()`:
 ```php
-app(\STS\LaravelUppyCompanion\LaravelUppyCompanion::class)->configure(
-    new S3Client(config('aws')),
-    'a-known-static-bucket'
+App::make(\STS\LaravelUppyCompanion\LaravelUppyCompanion::class)->configure(
+    'a-known-static-bucket',
+    new S3Client(config('aws'))
 );
 ```
 
 User isn't available in `AppServiceProvider::boot()`, but will return the correct value by the time the callback is called.
 ```php
-app(\STS\LaravelUppyCompanion\LaravelUppyCompanion::class)->configure(
-    fn() => user()->s3client(),
-    fn() => user()->s3_bucket
+App::make(\STS\LaravelUppyCompanion\LaravelUppyCompanion::class)->configure(
+    fn() => user()->s3_bucket,
+    fn() => user()->s3client()
 );
 ```
 
@@ -45,16 +45,18 @@ In your `AppServiceProvider::register()` method, create and configure new compan
 ```php
 public function register()
 {
-    $this->app->singleton('companion.public-media', function ($app) {
-        $companion = new \STS\LaravelUppyCompanion\LaravelUppyCompanion();
-        $companion->configure(new S3Client(config('aws')), 'my-public-media');
-        return $companion;
+    App::singleton('companion.public-media', function ($app) {
+        return new \STS\LaravelUppyCompanion\LaravelUppyCompanion(
+            'my-public-media',
+            new S3Client(config('aws'))
+        );
     });
 
-    $this->app->singleton('companion.archive', function ($app) {
-        $companion = new \STS\LaravelUppyCompanion\LaravelUppyCompanion();
-        $companion->configure(new S3Client(config('archive-storage')), 'my-archive-bucket');
-        return $companion;
+    App::singleton('companion.archive', function ($app) {
+        return new \STS\LaravelUppyCompanion\LaravelUppyCompanion(
+            'my-archive-bucket',
+            new S3Client(config('archive-storage'))
+        );
     });
 }
 ```
@@ -62,10 +64,10 @@ public function register()
 Then, in your `routes.php` file, call the static method on the companion you wish to use:
 ```php
 Route::group(['prefix' => 'public/media/upload/prefix'], function () {
-    \STS\LaravelUppyCompanion\LaravelUppyCompanion::routes(app('companion.public-media'));
+    \STS\LaravelUppyCompanion\LaravelUppyCompanion::routes(App::make('companion.public-media'));
 });
 
 Route::group(['prefix' => 'private/archive/upload/prefix'], function () {
-    \STS\LaravelUppyCompanion\LaravelUppyCompanion::routes(app('companion.archive'));
+    \STS\LaravelUppyCompanion\LaravelUppyCompanion::routes(App::make('companion.archive'));
 });
 ```
