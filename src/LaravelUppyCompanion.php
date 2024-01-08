@@ -110,8 +110,6 @@ class LaravelUppyCompanion
      */
     protected static function createMultipartUpload(Request $request, LaravelUppyCompanion $companion)
     {
-        dd(['generated_key' => $companion->getKey($request->filename)]);
-
         $result = $companion->getClient()->createMultipartUpload([
             'Bucket' => $companion->getBucket(),
             'Key' => $companion->getKey($request->filename),
@@ -119,6 +117,11 @@ class LaravelUppyCompanion
             'ContentType' => $request->type,
             'Metadata' => $request->metadata,
             'Expires' => '+24 hours',
+        ]);
+
+        dd([
+            'generated_key' => $companion->getKey($request->filename),
+            'result' => $result,
         ]);
 
         return response()->json(['key' => $result['Key'], 'uploadId' => $result['UploadId']]);
