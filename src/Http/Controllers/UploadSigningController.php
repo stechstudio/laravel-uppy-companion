@@ -10,32 +10,29 @@ use STS\LaravelUppyCompanion\LaravelUppyCompanion;
 
 class UploadSigningController extends Controller
 {
-    public static function routes()
+    public static function routes(?LaravelUppyCompanion $companion = null)
     {
-        Route::group(['prefix' => 'sign/s3/multipart'], function () {
-            Route::post('/', ['uses' => '\\' . self::class . '@createMultipartUpload']);
-            Route::get('/{uploadId}', ['uses' => '\\' . self::class . '@getUploadedParts']);
-            Route::delete('/{uploadId}', ['uses' => '\\' . self::class . '@abortMultipartUpload']);
-            Route::post('/{uploadId}/complete', ['uses' => '\\' . self::class . '@completeMultipartUpload']);
-            Route::get('/{uploadId}/{partNumber}', ['uses' => '\\' . self::class . '@signPartUpload']);
-        });
-    }
+        $companion ??= app(LaravelUppyCompanion::class);
 
-    public function __construct(public LaravelUppyCompanion $companion)
-    {
+        Route::group(['prefix' => 'sign/s3/multipart'], function () use ($companion) {
+            Route::post('/', fn (Request $request) => self::createMultipartUpload($request, $companion));
+            Route::get('/{uploadId}', fn (Request $request) => self::getUploadedParts($request, $companion));
+            Route::delete('/{uploadId}', fn (Request $request) => self::abortMultipartUpload($request, $companion));
+            Route::post('/{uploadId}/complete', fn (Request $request) => self::completeMultipartUpload($request, $companion));
+            Route::get('/{uploadId}/{partNumber}', fn (Request $request) => self::signPartUpload($request, $companion));
+        });
     }
 
     /**
      * @param Request $request
-     * @param SigningClientProvider $signer
+     * @param LaravelUppyCompanion $companion
      * @return \Illuminate\Http\JsonResponse
      */
-    public function createMultipartUpload(Request $request)
+    protected static function createMultipartUpload(Request $request, LaravelUppyCompanion $companion)
     {
-        $split = explode('.', $request->filename);
-        $result = $this->companion->getClient()->createMultipartUpload([
-            'Bucket' => $this->companion->getBucket(),
-            'Key' => count($split) > 1 ? Str::uuid() . '.' . $split[count($split) - 1] : Str::uuid(),
+        $result = $companion->getClient()->createMultipartUpload([
+            'Bucket' => $companion->getBucket(),
+            'Key' => $companion->getKey($request->filename),
             'ACL' => 'private',
             'ContentType' => $request->type,
             'Metadata' => $request->metadata,
@@ -47,17 +44,17 @@ class UploadSigningController extends Controller
 
     /**
      * @param Request $request
-     * @param SigningClientProvider $signer
+     * @param LaravelUppyCompanion $companion
      * @return \Illuminate\Http\JsonResponse
      */
-    public function getUploadedParts(Request $request)
+    protected static function getUploadedParts(Request $request, LaravelUppyCompanion $companion)
     {
         $parts = [];
         $next = 0;
 
         do {
-            $result = $this->companion->getClient()->listParts([
-                'Bucket' => $this->companion->getBucket(),
+            $result = $companion->getClient()->listParts([
+                'Bucket' => $companion->getBucket(),
                 'Key' => $request->key,
                 'UploadId' => $request->uploadId,
                 'PartNumberMarker' => $next,
@@ -72,13 +69,13 @@ class UploadSigningController extends Controller
 
     /**
      * @param Request $request
-     * @param SigningClientProvider $signer
+     * @param LaravelUppyCompanion $companion
      * @return \Illuminate\Http\JsonResponse
      */
-    public function signPartUpload(Request $request)
+    protected static function signPartUpload(Request $request, LaravelUppyCompanion $companion)
     {
-        $cmd = $this->companion->getClient()->getCommand('uploadPart', [
-            'Bucket' => $this->companion->getBucket(),
+        $cmd = $companion->getClient()->getCommand('uploadPart', [
+            'Bucket' => $companion->getBucket(),
             'Key' => $request->key,
             'UploadId' => $request->uploadId,
             'PartNumber' => $request->partNumber,
@@ -86,20 +83,20 @@ class UploadSigningController extends Controller
             'Expires' => '+24 hours',
         ]);
 
-        $signedRequest = $this->companion->getClient()->createPresignedRequest($cmd, '+24 hours');
+        $signedRequest = $companion->getClient()->createPresignedRequest($cmd, '+24 hours');
 
         return response()->json(['url' => (string)$signedRequest->getUri()]);
     }
 
     /**
      * @param Request $request
-     * @param SigningClientProvider $signer
+     * @param LaravelUppyCompanion $companion
      * @return \Illuminate\Http\JsonResponse
      */
-    public function abortMultipartUpload(Request $request)
+    protected static function abortMultipartUpload(Request $request, LaravelUppyCompanion $companion)
     {
-        $this->companion->getClient()->abortMultipartUpload([
-            'Bucket' => $this->companion->getBucket(),
+        $companion->getClient()->abortMultipartUpload([
+            'Bucket' => $companion->getBucket(),
             'Key' => $request->key,
             'UploadId' => $request->uploadId,
         ]);
@@ -109,13 +106,13 @@ class UploadSigningController extends Controller
 
     /**
      * @param Request $request
-     * @param SigningClientProvider $signer
+     * @param LaravelUppyCompanion $companion
      * @return \Illuminate\Http\JsonResponse
      */
-    public function completeMultipartUpload(Request $request)
+    protected static function completeMultipartUpload(Request $request, LaravelUppyCompanion $companion)
     {
-        $result = $this->companion->getClient()->completeMultipartUpload([
-            'Bucket' => $this->companion->getBucket(),
+        $result = $companion->getClient()->completeMultipartUpload([
+            'Bucket' => $companion->getBucket(),
             'Key' => $request->key,
             'UploadId' => $request->uploadId,
             'MultipartUpload' => ['Parts' => $request->parts],
