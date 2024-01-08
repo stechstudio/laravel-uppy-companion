@@ -4,9 +4,10 @@ This package offers a handful of routes that provide the [Uppy JS uploader](http
 
 ## Example Usage
 In your `routes.php` file, simply call the static method on the provided controller to register the routes:
+
 ```php
 Route::group(['prefix' => 'your/upload/prefix'], function () {
-    \STS\LaravelUppyCompanion\Http\Controllers\UploadSigningController::routes();
+    \STS\LaravelUppyCompanion\LaravelUppyCompanion::routes();
 });
 ```
 
@@ -22,12 +23,49 @@ Because [FileRocket](https://github.com/stechstudio/FileRocket) requires informa
 
 Simple values known at `boot()`:
 ```php
-LaravelUppyCompanion::client(new S3Client(config('aws')));
-LaravelUppyCompanion::bucket('a-known-static-bucket');
+app(\STS\LaravelUppyCompanion\LaravelUppyCompanion::class)->configure(
+    new S3Client(config('aws')),
+    'a-known-static-bucket'
+);
 ```
 
 User isn't available in `AppServiceProvider::boot()`, but will return the correct value by the time the callback is called.
 ```php
-LaravelUppyCompanion::client(fn() => user()->s3client());
-LaravelUppyCompanion::bucket(fn() => user()->s3_bucket);
+app(\STS\LaravelUppyCompanion\LaravelUppyCompanion::class)->configure(
+    fn() => user()->s3client(),
+    fn() => user()->s3_bucket
+);
+```
+
+## Advanced
+You may create and configure an unlimited number of companions. This is useful if you need your app has multiple buckets
+which should be used in different contexts.
+
+In your `AppServiceProvider::register()` method, create and configure new companion singletons.
+```php
+public function register()
+{
+    $this->app->singleton('companion.public-media', function ($app) {
+        $companion = new \STS\LaravelUppyCompanion\LaravelUppyCompanion();
+        $companion->configure(new S3Client(config('aws')), 'my-public-media');
+        return $companion;
+    });
+
+    $this->app->singleton('companion.archive', function ($app) {
+        $companion = new \STS\LaravelUppyCompanion\LaravelUppyCompanion();
+        $companion->configure(new S3Client(config('archive-storage')), 'my-archive-bucket');
+        return $companion;
+    });
+}
+```
+
+Then, in your `routes.php` file, call the static method on the companion you wish to use:
+```php
+Route::group(['prefix' => 'public/media/upload/prefix'], function () {
+    \STS\LaravelUppyCompanion\LaravelUppyCompanion::routes(app('companion.public-media'));
+});
+
+Route::group(['prefix' => 'private/archive/upload/prefix'], function () {
+    \STS\LaravelUppyCompanion\LaravelUppyCompanion::routes(app('companion.archive'));
+});
 ```
