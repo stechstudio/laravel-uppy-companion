@@ -61,7 +61,7 @@ public function register()
 }
 ```
 
-Then, in your `routes.php` file, call the static method on the companion you wish to use:
+Then, in your `routes.php` file, call the static `routes` method with the companion instance as the argument.
 ```php
 Route::group(['prefix' => 'public/media/upload/prefix'], function () {
     \STS\LaravelUppyCompanion\LaravelUppyCompanion::routes(App::make('companion.public-media'));
