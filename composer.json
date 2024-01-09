@@ -14,6 +14,7 @@
         }
     ],
     "require": {
+        "php": "^8.0",
         "aws/aws-sdk-php": "^3.111",
         "illuminate/http": "^8.0|^9.0|^10.0",
         "illuminate/routing": "^8.0|^9.0|^10.0",
