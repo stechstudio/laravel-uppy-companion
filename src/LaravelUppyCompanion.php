@@ -119,11 +119,6 @@ class LaravelUppyCompanion
             'Expires' => '+24 hours',
         ]);
 
-        dd([
-            'generated_key' => $companion->getKey($request->filename),
-            'result' => $result,
-        ]);
-
         return response()->json(['key' => $result['Key'], 'uploadId' => $result['UploadId']]);
     }
 
