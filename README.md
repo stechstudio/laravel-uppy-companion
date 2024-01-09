@@ -71,3 +71,23 @@ Route::group(['prefix' => 'private/archive/upload/prefix'], function () {
     \STS\LaravelUppyCompanion\LaravelUppyCompanion::routes(App::make('companion.archive'));
 });
 ```
+
+## File Keys
+By default, the companion will generate a UUID with a file extension for each file uploaded.
+If you wish to use a different key, you may pass a callback function to the `configure()` method.
+```php
+App::make(\STS\LaravelUppyCompanion\LaravelUppyCompanion::class)->configure(
+    'my-bucket',
+    new S3Client(config('aws')),
+    fn($filename) => $filename
+);
+```
+
+The default key generator is available as a static method on the companion class:
+```php
+App::make(\STS\LaravelUppyCompanion\LaravelUppyCompanion::class)->configure(
+    'my-bucket',
+    new S3Client(config('aws')),
+    fn($filename) => \STS\LaravelUppyCompanion\LaravelUppyCompanion::getUUID($filename)
+);
+```
