@@ -94,13 +94,28 @@ class LaravelUppyCompanion
     {
         $companion ??= app(LaravelUppyCompanion::class);
 
-        Route::group(['prefix' => 'sign/s3/multipart'], function () use ($companion) {
-            Route::post('/', fn (Request $request) => self::createMultipartUpload($request, $companion));
-            Route::get('/{uploadId}', fn (Request $request) => self::getUploadedParts($request, $companion));
-            Route::delete('/{uploadId}', fn (Request $request) => self::abortMultipartUpload($request, $companion));
-            Route::post('/{uploadId}/complete', fn (Request $request) => self::completeMultipartUpload($request, $companion));
-            Route::get('/{uploadId}/{partNumber}', fn (Request $request) => self::signPartUpload($request, $companion));
+        Route::group(['prefix' => 'sign/s3'], function () use ($companion) {
+            Route::get('/params', fn (Request $request) => self::startSinglePartUpload($request, $companion));
+            Route::post('/complete', fn (Request $request) => self::completeSinglePartUpload($request, $companion));
+
+            Route::group(['prefix' => 'multipart'], function () use ($companion) {
+                Route::post('/', fn (Request $request) => self::createMultipartUpload($request, $companion));
+                Route::get('/{uploadId}', fn (Request $request) => self::getUploadedParts($request, $companion));
+                Route::delete('/{uploadId}', fn (Request $request) => self::abortMultipartUpload($request, $companion));
+                Route::post('/{uploadId}/complete', fn (Request $request) => self::completeMultipartUpload($request, $companion));
+                Route::get('/{uploadId}/{partNumber}', fn (Request $request) => self::signPartUpload($request, $companion));
+            });
         });
+    }
+
+    protected static function startSinglePartUpload(Request $request, LaravelUppyCompanion $companion)
+    {
+
+    }
+
+    protected static function completeSinglePartUpload(Request $request, LaravelUppyCompanion $companion)
+    {
+
     }
 
     /**
@@ -140,7 +155,7 @@ class LaravelUppyCompanion
                 'PartNumberMarker' => $next,
             ]);
 
-            $parts = array_merge($parts, $result['Parts']);
+            $parts = array_merge($parts, $result['Parts'] ?? []);
             $next = $result['NextPartNumberMarker'];
         } while ($result['IsTruncated']);
 
