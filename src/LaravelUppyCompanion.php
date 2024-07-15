@@ -108,9 +108,25 @@ class LaravelUppyCompanion
         });
     }
 
+    /**
+     * @param Request $request
+     * @param LaravelUppyCompanion $companion
+     * @return \Illuminate\Http\JsonResponse
+     */
     protected static function startSinglePartUpload(Request $request, LaravelUppyCompanion $companion)
     {
+        $cmd = $companion->getClient()->getCommand('putObject', [
+            'Bucket' => $companion->getBucket(),
+            'Key' => $companion->getKey($request->filename),
+            'ACL' => 'private',
+            'ContentType' => $request->type,
+            'Metadata' => $request->metadata,
+            'Expires' => '+24 hours',
+        ]);
 
+        $signedRequest = $companion->getClient()->createPresignedRequest($cmd, '+24 hours');
+
+        return response()->json(['url' => (string)$signedRequest->getUri()]);
     }
 
     protected static function completeSinglePartUpload(Request $request, LaravelUppyCompanion $companion)
