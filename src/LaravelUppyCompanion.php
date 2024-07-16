@@ -126,7 +126,14 @@ class LaravelUppyCompanion
 
         $signedRequest = $companion->getClient()->createPresignedRequest($cmd, '+24 hours');
 
-        return response()->json(['url' => (string)$signedRequest->getUri()]);
+        return response()->json([
+            'method' => $signedRequest->getMethod(),
+            'url' => (string)$signedRequest->getUri(),
+            'fields' => $request->metadata,
+            'headers' => [
+                'content-type' => $request->type,
+            ],
+        ]);
     }
 
     protected static function completeSinglePartUpload(Request $request, LaravelUppyCompanion $companion)
