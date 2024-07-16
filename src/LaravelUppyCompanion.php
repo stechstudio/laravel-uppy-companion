@@ -118,9 +118,10 @@ class LaravelUppyCompanion
         $cmd = $companion->getClient()->getCommand('putObject', [
             'Bucket' => $companion->getBucket(),
             'Key' => $companion->getKey($request->filename),
-            'ACL' => 'private',
+//            'ACL' => 'private',
             'ContentType' => $request->type,
-            'Metadata' => $request->metadata,
+//            'Metadata' => $request->metadata,
+//            'Fields' => $request->metadata,
             'Expires' => '+24 hours',
         ]);
 
