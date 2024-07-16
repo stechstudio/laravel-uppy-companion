@@ -118,11 +118,8 @@ class LaravelUppyCompanion
         $cmd = $companion->getClient()->getCommand('putObject', [
             'Bucket' => $companion->getBucket(),
             'Key' => $companion->getKey($request->filename),
-//            'ACL' => 'private',
             'ContentType' => $request->type,
-//            'Metadata' => $request->metadata,
-//            'Fields' => $request->metadata,
-            'Expires' => '+24 hours',
+            'Body' => '',
         ]);
 
         $signedRequest = $companion->getClient()->createPresignedRequest($cmd, '+24 hours');
@@ -130,10 +127,6 @@ class LaravelUppyCompanion
         return response()->json([
             'method' => $signedRequest->getMethod(),
             'url' => (string)$signedRequest->getUri(),
-            'fields' => $request->metadata,
-            'headers' => [
-                'content-type' => $request->type,
-            ],
         ]);
     }
 
