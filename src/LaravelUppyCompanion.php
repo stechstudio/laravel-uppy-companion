@@ -127,7 +127,6 @@ class LaravelUppyCompanion
         return response()->json([
             'method' => $signedRequest->getMethod(),
             'url' => (string)$signedRequest->getUri(),
-            'fields' => $request->metadata,
         ]);
     }
 
