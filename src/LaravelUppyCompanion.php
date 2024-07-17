@@ -94,13 +94,39 @@ class LaravelUppyCompanion
     {
         $companion ??= app(LaravelUppyCompanion::class);
 
-        Route::group(['prefix' => 'sign/s3/multipart'], function () use ($companion) {
-            Route::post('/', fn (Request $request) => self::createMultipartUpload($request, $companion));
-            Route::get('/{uploadId}', fn (Request $request) => self::getUploadedParts($request, $companion));
-            Route::delete('/{uploadId}', fn (Request $request) => self::abortMultipartUpload($request, $companion));
-            Route::post('/{uploadId}/complete', fn (Request $request) => self::completeMultipartUpload($request, $companion));
-            Route::get('/{uploadId}/{partNumber}', fn (Request $request) => self::signPartUpload($request, $companion));
+        Route::group(['prefix' => 'sign/s3'], function () use ($companion) {
+            Route::get('/params', fn (Request $request) => self::startSinglePartUpload($request, $companion));
+
+            Route::group(['prefix' => 'multipart'], function () use ($companion) {
+                Route::post('/', fn (Request $request) => self::createMultipartUpload($request, $companion));
+                Route::get('/{uploadId}', fn (Request $request) => self::getUploadedParts($request, $companion));
+                Route::delete('/{uploadId}', fn (Request $request) => self::abortMultipartUpload($request, $companion));
+                Route::post('/{uploadId}/complete', fn (Request $request) => self::completeMultipartUpload($request, $companion));
+                Route::get('/{uploadId}/{partNumber}', fn (Request $request) => self::signPartUpload($request, $companion));
+            });
         });
+    }
+
+    /**
+     * @param Request $request
+     * @param LaravelUppyCompanion $companion
+     * @return \Illuminate\Http\JsonResponse
+     */
+    protected static function startSinglePartUpload(Request $request, LaravelUppyCompanion $companion)
+    {
+        $cmd = $companion->getClient()->getCommand('putObject', [
+            'Bucket' => $companion->getBucket(),
+            'Key' => $companion->getKey($request->filename),
+            'ContentType' => $request->type,
+            'Body' => '',
+        ]);
+
+        $signedRequest = $companion->getClient()->createPresignedRequest($cmd, '+24 hours');
+
+        return response()->json([
+            'method' => $signedRequest->getMethod(),
+            'url' => (string)$signedRequest->getUri(),
+        ]);
     }
 
     /**
