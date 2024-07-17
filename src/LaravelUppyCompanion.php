@@ -173,7 +173,7 @@ class LaravelUppyCompanion
                 'PartNumberMarker' => $next,
             ]);
 
-            $parts = array_merge($parts, $result['Parts'] ?? []);
+            $parts = array_merge($parts, $result['Parts']);
             $next = $result['NextPartNumberMarker'];
         } while ($result['IsTruncated']);
 
