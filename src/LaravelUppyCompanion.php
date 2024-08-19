@@ -3,36 +3,38 @@
 namespace STS\LaravelUppyCompanion;
 
 use Aws\S3\S3ClientInterface;
+use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use Laravel\SerializableClosure\Contracts\Serializable as SerializableClosure;
 
 class LaravelUppyCompanion
 {
-    private \Closure $clientCallback;
+    private Closure|SerializableClosure $clientCallback;
     private S3ClientInterface $client;
 
-    private \Closure $bucketCallback;
+    private Closure|SerializableClosure $bucketCallback;
     private string $bucket;
 
-    private ?\Closure $keyCallback;
+    private Closure|SerializableClosure|null $keyCallback;
 
-    public function __construct(\Closure|string|null $bucket = null, \Closure|S3ClientInterface|null $client = null, ?\Closure $key = null)
+    public function __construct(Closure|string|null $bucket = null, Closure|S3ClientInterface|null $client = null, ?Closure $key = null)
     {
         if ($bucket && $client) {
             $this->configure($bucket, $client, $key);
         }
     }
 
-    public function configure(\Closure|string $bucket, \Closure|S3ClientInterface $client, ?\Closure $key = null)
+    public function configure(Closure|string $bucket, Closure|S3ClientInterface $client, ?Closure $key = null)
     {
-        if ($bucket instanceof \Closure) {
+        if ($bucket instanceof Closure) {
             $this->bucketCallback = $bucket;
         } else {
             $this->bucket = $bucket;
         }
 
-        if ($client instanceof \Closure) {
+        if ($client instanceof Closure) {
             $this->clientCallback = $client;
         } else {
             $this->client = $client;
