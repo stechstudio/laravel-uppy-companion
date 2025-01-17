@@ -19,14 +19,26 @@ class LaravelUppyCompanion
 
     private Closure|SerializableClosure|null $keyCallback;
 
-    public function __construct(Closure|string|null $bucket = null, Closure|S3ClientInterface|null $client = null, ?Closure $key = null)
+    private Closure|SerializableClosure|null $extraParametersCallback;
+
+    public function __construct(
+        Closure|string|null $bucket = null,
+        Closure|S3ClientInterface|null $client = null,
+        ?Closure $key = null,
+        Closure|null $extraParameters = null
+    )
     {
         if ($bucket && $client) {
-            $this->configure($bucket, $client, $key);
+            $this->configure($bucket, $client, $key, $extraParameters);
         }
     }
 
-    public function configure(Closure|string $bucket, Closure|S3ClientInterface $client, ?Closure $key = null)
+    public function configure(
+        Closure|string $bucket,
+        Closure|S3ClientInterface $client,
+        ?Closure $key = null,
+        Closure|null $extraParameters = null
+    )
     {
         if ($bucket instanceof Closure) {
             $this->bucketCallback = $bucket;
@@ -41,6 +53,7 @@ class LaravelUppyCompanion
         }
 
         $this->keyCallback = $key ?? fn ($filename) => static::getUUID($filename);
+        $this->extraParametersCallback = $extraParameters;
     }
 
     public function getClient(): S3ClientInterface
@@ -138,14 +151,25 @@ class LaravelUppyCompanion
      */
     protected static function createMultipartUpload(Request $request, LaravelUppyCompanion $companion)
     {
-        $result = $companion->getClient()->createMultipartUpload([
+        $parameters = [
             'Bucket' => $companion->getBucket(),
             'Key' => $companion->getKey($request->filename),
             'ACL' => 'private',
             'ContentType' => $request->type,
             'Metadata' => $request->metadata,
             'Expires' => '+24 hours',
-        ]);
+        ];
+
+        $extraParameters = [];
+        if ($companion->extraParametersCallback) {
+            $extraParametersResult = call_user_func($companion->extraParametersCallback, $request);
+
+            if (is_array($extraParametersResult)) {
+                $extraParameters = $extraParametersResult;
+            }
+        }
+
+        $result = $companion->getClient()->createMultipartUpload(array_merge($parameters, $extraParameters));
 
         return response()->json(['key' => $result['Key'], 'uploadId' => $result['UploadId']]);
     }
