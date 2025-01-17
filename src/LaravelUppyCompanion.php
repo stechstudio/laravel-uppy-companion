@@ -129,12 +129,23 @@ class LaravelUppyCompanion
      */
     protected static function startSinglePartUpload(Request $request, LaravelUppyCompanion $companion)
     {
-        $cmd = $companion->getClient()->getCommand('putObject', [
+        $parameters = [
             'Bucket' => $companion->getBucket(),
             'Key' => $companion->getKey($request->filename),
             'ContentType' => $request->type,
             'Body' => '',
-        ]);
+        ];
+
+        $extraParameters = [];
+        if ($companion->extraParametersCallback) {
+            $extraParametersResult = call_user_func($companion->extraParametersCallback, $request);
+
+            if (is_array($extraParametersResult)) {
+                $extraParameters = $extraParametersResult;
+            }
+        }
+
+        $cmd = $companion->getClient()->getCommand('putObject', array_merge($parameters, $extraParameters));
 
         $signedRequest = $companion->getClient()->createPresignedRequest($cmd, '+24 hours');
 
