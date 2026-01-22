@@ -19,16 +19,16 @@ class LaravelUppyCompanion
 
     private Closure|SerializableClosure|null $keyCallback;
 
-    private Closure|SerializableClosure|null $extraParamsCallback = null;
+    private Closure|SerializableClosure|array|null $extraParams = null;
 
-    public function __construct(Closure|string|null $bucket = null, Closure|S3ClientInterface|null $client = null, ?Closure $key = null, ?Closure $extraParams = null)
+    public function __construct(Closure|string|null $bucket = null, Closure|S3ClientInterface|null $client = null, ?Closure $key = null, Closure|array|null $extraParams = null)
     {
         if ($bucket && $client) {
             $this->configure($bucket, $client, $key, $extraParams);
         }
     }
 
-    public function configure(Closure|string $bucket, Closure|S3ClientInterface $client, ?Closure $key = null, ?Closure $extraParams = null)
+    public function configure(Closure|string $bucket, Closure|S3ClientInterface $client, ?Closure $key = null, Closure|array|null $extraParams = null)
     {
         if ($bucket instanceof Closure) {
             $this->bucketCallback = $bucket;
@@ -43,7 +43,7 @@ class LaravelUppyCompanion
         }
 
         $this->keyCallback = $key ?? fn ($filename) => static::getUUID($filename);
-        $this->extraParamsCallback = $extraParams;
+        $this->extraParams = $extraParams;
     }
 
     /**
@@ -53,11 +53,7 @@ class LaravelUppyCompanion
      */
     public function getExtraParams(): array
     {
-        if ($this->extraParamsCallback === null) {
-            return [];
-        }
-
-        return call_user_func($this->extraParamsCallback);
+        return value($this->extraParams) ?? [];
     }
 
     public function getClient(): S3ClientInterface
