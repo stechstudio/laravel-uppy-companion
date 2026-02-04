@@ -19,14 +19,16 @@ class LaravelUppyCompanion
 
     private Closure|SerializableClosure|null $keyCallback;
 
-    public function __construct(Closure|string|null $bucket = null, Closure|S3ClientInterface|null $client = null, ?Closure $key = null)
+    private Closure|SerializableClosure|array|null $extraParams = null;
+
+    public function __construct(Closure|string|null $bucket = null, Closure|S3ClientInterface|null $client = null, ?Closure $key = null, Closure|array|null $extraParams = null)
     {
         if ($bucket && $client) {
-            $this->configure($bucket, $client, $key);
+            $this->configure($bucket, $client, $key, $extraParams);
         }
     }
 
-    public function configure(Closure|string $bucket, Closure|S3ClientInterface $client, ?Closure $key = null)
+    public function configure(Closure|string $bucket, Closure|S3ClientInterface $client, ?Closure $key = null, Closure|array|null $extraParams = null)
     {
         if ($bucket instanceof Closure) {
             $this->bucketCallback = $bucket;
@@ -41,6 +43,17 @@ class LaravelUppyCompanion
         }
 
         $this->keyCallback = $key ?? fn ($filename) => static::getUUID($filename);
+        $this->extraParams = $extraParams;
+    }
+
+    /**
+     * Gets extra parameters to be merged into S3 upload commands.
+     *
+     * @return array
+     */
+    public function getExtraParams(): array
+    {
+        return value($this->extraParams) ?? [];
     }
 
     public function getClient(): S3ClientInterface
@@ -116,12 +129,12 @@ class LaravelUppyCompanion
      */
     protected static function startSinglePartUpload(Request $request, LaravelUppyCompanion $companion)
     {
-        $cmd = $companion->getClient()->getCommand('putObject', [
+        $cmd = $companion->getClient()->getCommand('putObject', array_merge([
             'Bucket' => $companion->getBucket(),
             'Key' => $companion->getKey($request->filename),
             'ContentType' => $request->type,
             'Body' => '',
-        ]);
+        ], $companion->getExtraParams()));
 
         $signedRequest = $companion->getClient()->createPresignedRequest($cmd, '+24 hours');
 
@@ -138,14 +151,14 @@ class LaravelUppyCompanion
      */
     protected static function createMultipartUpload(Request $request, LaravelUppyCompanion $companion)
     {
-        $result = $companion->getClient()->createMultipartUpload([
+        $result = $companion->getClient()->createMultipartUpload(array_merge([
             'Bucket' => $companion->getBucket(),
             'Key' => $companion->getKey($request->filename),
             'ACL' => 'private',
             'ContentType' => $request->type,
             'Metadata' => $request->metadata,
             'Expires' => '+24 hours',
-        ]);
+        ], $companion->getExtraParams()));
 
         return response()->json(['key' => $result['Key'], 'uploadId' => $result['UploadId']]);
     }

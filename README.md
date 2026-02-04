@@ -91,3 +91,39 @@ App::make(\STS\LaravelUppyCompanion\LaravelUppyCompanion::class)->configure(
     fn($filename) => \STS\LaravelUppyCompanion\LaravelUppyCompanion::getUUID($filename)
 );
 ```
+
+## Extra Parameters
+You may specify additional S3 parameters (such as `StorageClass`, `ACL`, `ServerSideEncryption`, etc.) by providing an `extraParams` array or callback to the `configure()` method. These parameters will be merged into both single-part and multipart upload requests.
+
+Simple array when values are known at configuration time:
+```php
+App::make(\STS\LaravelUppyCompanion\LaravelUppyCompanion::class)->configure(
+    'my-bucket',
+    new S3Client(config('aws')),
+    null, // use default key generator
+    ['StorageClass' => 'INTELLIGENT_TIERING']
+);
+```
+
+Callback when values need to be resolved at runtime:
+```php
+App::make(\STS\LaravelUppyCompanion\LaravelUppyCompanion::class)->configure(
+    'my-bucket',
+    new S3Client(config('aws')),
+    null, // use default key generator
+    fn() => ['StorageClass' => user()->preferred_storage_class]
+);
+```
+
+You can also combine it with a custom key callback:
+```php
+App::make(\STS\LaravelUppyCompanion\LaravelUppyCompanion::class)->configure(
+    'my-bucket',
+    new S3Client(config('aws')),
+    fn($filename) => 'uploads/' . $filename,
+    [
+        'StorageClass' => 'STANDARD_IA',
+        'ServerSideEncryption' => 'AES256',
+    ]
+);
+```
