@@ -1,6 +1,13 @@
 # Laravel Uppy Companion
 
+[![Tests](https://github.com/stechstudio/laravel-uppy-companion/actions/workflows/tests.yml/badge.svg)](https://github.com/stechstudio/laravel-uppy-companion/actions/workflows/tests.yml)
+
 This package offers a handful of routes that provide the [Uppy JS uploader](https://github.com/transloadit/uppy) with the endpoints it expects to sign and send multipart uploads directly to an S3 bucket.
+
+## Requirements
+
+- PHP 8.3+
+- Laravel 11, 12, or 13
 
 ## Example Usage
 In your `routes.php` file, simply call the static method on the provided controller to register the routes:
@@ -38,8 +45,8 @@ App::make(\STS\LaravelUppyCompanion\LaravelUppyCompanion::class)->configure(
 ```
 
 ## Advanced
-You may create and configure an unlimited number of companions. This is useful if you need your app has multiple buckets
-which should be used in different contexts.
+You may create and configure an unlimited number of companions. This is useful if your app needs multiple buckets
+used in different contexts.
 
 In your `AppServiceProvider::register()` method, create and configure new companion singletons.
 ```php
