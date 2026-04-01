@@ -138,3 +138,43 @@ it('resolves extra params from closure', function () {
 
     expect($companion->getExtraParams())->toBe(['ACL' => 'private']);
 });
+
+it('returns empty array when extra params closure returns null', function () {
+    $client = Mockery::mock(S3ClientInterface::class);
+    $companion = new LaravelUppyCompanion('bucket', $client, null, fn () => null);
+
+    expect($companion->getExtraParams())->toBe([]);
+});
+
+it('configures with string bucket and closure client', function () {
+    $client = Mockery::mock(S3ClientInterface::class);
+    $companion = new LaravelUppyCompanion();
+    $companion->configure('static-bucket', fn () => $client);
+
+    expect($companion->getBucket())->toBe('static-bucket');
+    expect($companion->getClient())->toBe($client);
+});
+
+it('configures with closure bucket and object client', function () {
+    $client = Mockery::mock(S3ClientInterface::class);
+    $companion = new LaravelUppyCompanion();
+    $companion->configure(fn () => 'dynamic-bucket', $client);
+
+    expect($companion->getBucket())->toBe('dynamic-bucket');
+    expect($companion->getClient())->toBe($client);
+});
+
+it('constructor passes all four parameters through to configure', function () {
+    $client = Mockery::mock(S3ClientInterface::class);
+    $companion = new LaravelUppyCompanion(
+        'my-bucket',
+        $client,
+        fn ($f) => 'prefix/' . $f,
+        ['StorageClass' => 'GLACIER'],
+    );
+
+    expect($companion->getBucket())->toBe('my-bucket');
+    expect($companion->getClient())->toBe($client);
+    expect($companion->getKey('doc.pdf'))->toBe('prefix/doc.pdf');
+    expect($companion->getExtraParams())->toBe(['StorageClass' => 'GLACIER']);
+});
